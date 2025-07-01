@@ -52,15 +52,44 @@ public:
 
     void handle_click(const sf::Vector2i& mouse_pos, sf::RenderWindow& window, int square_size = 32, int padding = 8) {
         int num_options = static_cast<int>(options.size());
+        sf::Vector2u win_size = window.getSize();
+
+        int x = 0, y = 0;
         int bar_width = square_size + 2 * padding;
         int bar_height = num_options * (square_size + padding) + padding;
-        sf::Vector2u win_size = window.getSize();
-        int x = (bar_alignment == "left") ? 0 : (win_size.x - bar_width);
-        int y = (win_size.y - bar_height) / 2;
+
+        if (bar_alignment == "left") {
+            x = 0;
+            y = (win_size.y - bar_height) / 2;
+        }
+        else if (bar_alignment == "right") {
+            x = win_size.x - bar_width;
+            y = (win_size.y - bar_height) / 2;
+        }
+        else if (bar_alignment == "top") {
+            x = (win_size.x - bar_height) / 2;
+            y = 0;
+        }
+        else if (bar_alignment == "bottom") {
+            x = (win_size.x - bar_height) / 2;
+            y = win_size.y - bar_width;
+        }
+        else {
+            // Default to right
+            x = win_size.x - bar_width;
+            y = (win_size.y - bar_height) / 2;
+        }
 
         for (int i = 0; i < num_options; ++i) {
-            int square_x = x + padding;
-            int square_y = y + padding + i * (square_size + padding);
+            int square_x, square_y;
+            if (bar_alignment == "left" || bar_alignment == "right") {
+                square_x = x + padding;
+                square_y = y + padding + i * (square_size + padding);
+            }
+            else { // top or bottom
+                square_x = x + padding + i * (square_size + padding);
+                square_y = y + padding;
+            }
             sf::IntRect rect{ {square_x, square_y}, {square_size, square_size} };
             if (rect.contains(mouse_pos)) {
                 selected_index = i;
@@ -80,16 +109,44 @@ public:
 
     void draw_sfml(sf::RenderWindow& window, int square_size = 32, int padding = 8) {
         int num_options = static_cast<int>(options.size());
+        sf::Vector2u win_size = window.getSize();
+
+        int x = 0, y = 0;
         int bar_width = square_size + 2 * padding;
         int bar_height = num_options * (square_size + padding) + padding;
 
-        sf::Vector2u win_size = window.getSize();
-        int x = (bar_alignment == "left") ? 0 : (win_size.x - bar_width);
-        int y = (win_size.y - bar_height) / 2;
+        if (bar_alignment == "left") {
+            x = 0;
+            y = (win_size.y - bar_height) / 2;
+        }
+        else if (bar_alignment == "right") {
+            x = win_size.x - bar_width;
+            y = (win_size.y - bar_height) / 2;
+        }
+        else if (bar_alignment == "top") {
+            x = (win_size.x - bar_height) / 2;
+            y = 0;
+        }
+        else if (bar_alignment == "bottom") {
+            x = (win_size.x - bar_height) / 2;
+            y = win_size.y - bar_width;
+        }
+        else {
+            // Default to right
+            x = win_size.x - bar_width;
+            y = (win_size.y - bar_height) / 2;
+        }
 
         for (int i = 0; i < num_options; ++i) {
-            int square_x = x + padding;
-            int square_y = y + padding + i * (square_size + padding);
+            int square_x, square_y;
+            if (bar_alignment == "left" || bar_alignment == "right") {
+                square_x = x + padding;
+                square_y = y + padding + i * (square_size + padding);
+            }
+            else { // top or bottom
+                square_x = x + padding + i * (square_size + padding);
+                square_y = y + padding;
+            }
 
             if (options[i].is_image()) {
                 const std::string& path = options[i].image_path();
