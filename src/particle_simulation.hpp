@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <SFML/Graphics.hpp>
 
@@ -556,7 +556,7 @@ public:
 
 			Particle particle = particle_layers[mouse_x_grid][mouse_y_grid];
 
- 			sf::Font arial("ARIAL.TTF");
+ 			sf::Font arial("fonts/ARIAL.TTF");
 			sf::Text info(arial, particle.type + "\nTemp: " + round_to_str(particle.temp) + "\nState: " + particle.state, 15U);
 			info.setPosition(sf::Vector2f(550, 590));
 			window.draw(info);

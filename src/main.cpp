@@ -1,8 +1,8 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
-#include <Windows.h>
-#include "particle_simulation.h"
-#include "sidebar.h"
+
+#include "particle_simulation.hpp"
+#include "sidebar.hpp"
 #include <string>
 #include <sstream>
 
@@ -15,12 +15,12 @@ int main() {
     ParticleSimulation sim(50, 50);
 
     Sidebar sidebar({ "sand", "rock", "water" }, { sf::Color(255, 255, 0), sf::Color(128, 128, 128), sf::Color(0, 128, 255) });
-    sidebar.add_option_img("heat", "heat_element.png");
-    sidebar.add_option_img("cool", "cool_element.png");
-    sidebar.add_option_img("none", "none_element.png");
+    sidebar.add_option_img("heat", "assets/heat_element.png");
+    sidebar.add_option_img("cool", "assets/cool_element.png");
+    sidebar.add_option_img("none", "assets/none_element.png");
 
     Sidebar display_sidebar({ "standard" }, { sf::Color(255, 255, 0) }, "bottom");
-	display_sidebar.add_option_img("temperature", "temp_display_element.png");
+	display_sidebar.add_option_img("temperature", "assets/temp_display_element.png");
 
     bool paused = false;
     int brush_size = 5;
@@ -30,7 +30,7 @@ int main() {
     int mouse_x = 0;
     int mouse_y = 0;
 
-    sf::Font arial("ARIAL.TTF");
+    sf::Font arial("fonts/ARIAL.TTF");
     sf::Text info_top(arial, "", 15U);
     info_top.setPosition(sf::Vector2f(15, 556));
     std::string paused_info = "\n";
@@ -78,27 +78,21 @@ int main() {
                     }
                 }
             }
+
+            if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()) {
+                if (keyPressed->code == sf::Keyboard::Key::Space) {
+                    paused = !paused;
+
+                    paused_info = (paused) ? "paused\n" : "\n";
+                }
+                if (keyPressed->code == sf::Keyboard::Key::F && paused) {
+                    sim.update();
+                }
+            }
         }
 
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Escape)) {
             break;
-        }
-
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space)) {
-            paused = !paused;
-            if (paused) {
-                paused_info = "paused\n";
-            }
-            else {
-                paused_info = "\n";
-            }
-
-            Sleep(500);
-        }
-
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::F) && paused) {
-            sim.update();
-            Sleep(500);
         }
 
         if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)) {
@@ -136,7 +130,6 @@ int main() {
             sidebar.discover_element("glass", sf::Color(207, 255, 245));
         }
 
-        system("cls");
         window.clear();
 
         mousePos = sf::Mouse::getPosition(window);
