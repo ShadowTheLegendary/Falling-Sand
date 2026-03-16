@@ -1,18 +1,26 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
 
-#include "particle_simulation.hpp"
-#include "sidebar.hpp"
+#include "sand/particle_simulation.hpp"
+#include "ui/sidebar.hpp"
+#include "viewport/viewport.hpp"
+
 #include <string>
 #include <sstream>
 
 int main() {
+    register_material_behaviors();
+    register_materials();
+
     int playbackspeed = 15;
 
-    sf::RenderWindow window(sf::VideoMode({ 650, 650 }), "Particle Sim");
+    sf::RenderWindow window(sf::VideoMode({ 640, 360 }), "Particle Sim");
     window.setFramerateLimit(playbackspeed);
 
-    ParticleSimulation sim(50, 50);
+    sf::View view;
+    edit_viewport(window, view, {640, 360});
+
+    ParticleSimulation sim({64, 32});
 
     Sidebar sidebar({ "sand", "rock", "water" }, { sf::Color(255, 255, 0), sf::Color(128, 128, 128), sf::Color(0, 128, 255) });
     sidebar.add_option_img("heat", "assets/heat_element.png");
@@ -26,13 +34,10 @@ int main() {
     int brush_size = 5;
     bool draw_mode = false;
 
-    sf::Vector2i mousePos;
-    int mouse_x = 0;
-    int mouse_y = 0;
+    sf::Vector2i mouse_pos;
 
-    sf::Font arial("fonts/ARIAL.TTF");
     sf::Text info_top(arial, "", 15U);
-    info_top.setPosition(sf::Vector2f(15, 556));
+    info_top.setPosition(sf::Vector2f(15, 268));
     std::string paused_info = "\n";
     std::string display_mode_info = "standard";
 
@@ -62,10 +67,12 @@ int main() {
 
             if (const auto* mouseWheelScrolled = event->getIf<sf::Event::MouseWheelScrolled>()) {
                 if (mouseWheelScrolled->wheel == sf::Mouse::Wheel::Vertical) {
-                    if (mouseWheelScrolled->delta > 0)
+                    if (mouseWheelScrolled->delta > 0) {
                         brush_size = std::min(brush_size + 1, 50);
-                    else if (mouseWheelScrolled->delta < 0)
+                    }
+                    else if (mouseWheelScrolled->delta < 0) {
                         brush_size = std::max(brush_size - 1, 1);
+                    }
                 }
             }
 
@@ -89,6 +96,10 @@ int main() {
                     sim.update();
                 }
             }
+            
+            if (const auto* resized = event->getIf<sf::Event::Resized>()) {
+                edit_viewport(window, view, {640, 360});
+            }
         }
 
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Escape)) {
@@ -96,21 +107,21 @@ int main() {
         }
 
         if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)) {
-            sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+            sim.brush(brush_size, mouse_pos, MaterialID::Sand, 5);
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LShift)) {
-                sim.brush(brush_size, mousePos.x, mousePos.y, sidebar.get_selected_of_index(), 5);
+                
+                //sim.brush(brush_size, mousePos.x, mousePos.y, sidebar.get_selected_of_index(), 5);
             }
             else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LControl)) {
-                sim.brush(brush_size, mousePos.x, mousePos.y, sidebar.get_selected_of_index(), 0.5);
+                //sim.brush(brush_size, mousePos.x, mousePos.y, sidebar.get_selected_of_index(), 0.5);
             }
             else {
-                sim.brush(brush_size, mousePos.x, mousePos.y, sidebar.get_selected_of_index());
+                //sim.brush(brush_size, mousePos.x, mousePos.y, sidebar.get_selected_of_index());
             }
         }
 
         if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Right)) {
-            sf::Vector2i mousePos = sf::Mouse::getPosition(window);
-            sim.brush(brush_size, mousePos.x, mousePos.y, "none");
+            //sim.brush(brush_size, mousePos.x, mousePos.y, "none");
         }
 
         if (!paused) {
@@ -132,9 +143,7 @@ int main() {
 
         window.clear();
 
-        mousePos = sf::Mouse::getPosition(window);
-        mouse_x = mousePos.x;
-        mouse_y = mousePos.y;
+        mouse_pos = sf::Mouse::getPosition(window);
 
         // Display FPS in the info text
         std::ostringstream oss;
@@ -147,8 +156,8 @@ int main() {
         info_top.setString(oss.str());
 
         sim.draw_sfml(window, draw_mode);
-        sim.draw_brush_outline_sfml(window, brush_size, mouse_x, mouse_y);
-        sim.draw_particle_information_sfml(window, mouse_x, mouse_y);
+        sim.draw_brush_outline_sfml(window, brush_size, mouse_pos);
+        sim.draw_particle_information_sfml(window, mouse_pos);
 
         sidebar.draw_sfml(window);
         display_sidebar.draw_sfml(window);

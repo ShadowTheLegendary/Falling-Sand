@@ -1,2 +1,6 @@
 build/
+toolchains/
+
 CMakeLists.txt
+CMakeLists.json
+CMakePresets.json
