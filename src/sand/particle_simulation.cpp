@@ -14,7 +14,7 @@
 
 std::mt19937 gen(std::random_device{}());
 
-sf::Font arial("fonts/ARIAL.TTF");
+inline sf::Font arial("fonts/ARIAL.TTF");
 
 int ParticleSimulation::get_index(sf::Vector2i position) const {
     if (position.x < 0 or position.x >= size.x or position.y < 0 or position.y >= size.y) {
@@ -92,8 +92,6 @@ void ParticleSimulation::update_temp(Particle& particle, int coordinate_index, s
 
     pending_particle_layers[coordinate_index].temp = particle.temp + delta;
     pending_particle_layers[coordinate_index].temp = std::clamp(pending_particle_layers[coordinate_index].temp, -273.0f, 5000.0f);
-
-    // pending_particle_layers[coordinate_index].moved = false;
 }
 
 void ParticleSimulation::update_material(Particle& particle, int coordinate_index) {
@@ -156,6 +154,25 @@ void ParticleSimulation::update_movement(Particle& particle, sf::Vector2i coordi
     swap(coordinate, coordinate + offsets[move_index]);
 }
 
+void ParticleSimulation::update_particle(sf::Vector2i coordinate) {
+    Particle particle = particle_layers[get_index(coordinate)];
+            
+    if (particle.material == MaterialID::Air) {
+        return;
+    }
+    particle_count++;
+
+    int coordinate_index = get_index(coordinate);
+
+    std::vector<sf::Vector2i> surroundings = get_surroundings(coordinate);
+
+    update_temp(particle, coordinate_index, surroundings);
+    
+    update_material(particle, coordinate_index);
+
+    update_movement(particle, coordinate, surroundings);
+}
+
 void ParticleSimulation::update() {
     pending_particle_layers = particle_layers;
     particle_count = 0;
@@ -166,23 +183,9 @@ void ParticleSimulation::update() {
 
     for (int y = size.y - 1; y >= 0; y--) {
         for (int x = 0; x < size.x; x++) {
-            Particle particle = particle_layers[get_index({x, y})];
-            
-            if (particle.material == MaterialID::Air) {
-                continue;
-            }
-            particle_count++;
+            sf::Vector2i pos{x, y};
 
-            sf::Vector2i coordinate = { x, y };
-            int coordinate_index = get_index(coordinate);
-
-            std::vector<sf::Vector2i> surroundings = get_surroundings({x, y});
-
-            update_temp(particle, coordinate_index, surroundings);
-            
-            update_material(particle, coordinate_index);
-
-            update_movement(particle, coordinate, surroundings);
+           update_particle(pos);
         }
     }
 

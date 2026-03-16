@@ -1,3 +1,5 @@
+#include <SFML/System/Vector2.hpp>
+
 #include <iostream>
 #include <vector>
 #include <thread>
@@ -7,17 +9,19 @@
 #include <condition_variable>
 #include <atomic>
 
+using F = std::function<void()>;
+
 class ThreadPool {
 public:
     ThreadPool(size_t thread_count);
 
-    void enqueue(std::function<void()> task);
+    void enqueue(F task);
 
     ~ThreadPool();
 
 private:
     std::vector<std::thread> workers;
-    std::queue<std::function<void()>> tasks;
+    std::queue<F> tasks;
 
     std::mutex queue_mutex;
     std::condition_variable cv;

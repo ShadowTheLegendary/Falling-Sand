@@ -36,6 +36,8 @@ int main() {
 
     sf::Vector2i mouse_pos;
 
+    sf::Font arial("fonts/ARIAL.TTF");
+
     sf::Text info_top(arial, "", 15U);
     info_top.setPosition(sf::Vector2f(15, 268));
     std::string paused_info = "\n";
