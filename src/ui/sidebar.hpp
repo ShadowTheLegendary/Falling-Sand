@@ -8,23 +8,21 @@
 
 #include <SFML/Graphics.hpp>
 
+#include "src/sand/particles.hpp"
+
 class Sidebar {
 private:
     struct Option {
-        std::string name;
-        std::variant<sf::Color, std::string> visual; // color or image path
-        bool is_image() const { return std::holds_alternative<std::string>(visual); }
-        const sf::Color& color() const { return std::get<sf::Color>(visual); }
-        const std::string& image_path() const { return std::get<std::string>(visual); }
+        MaterialID id;
+        sf::Color color;
     };
 
     std::vector<Option> options;
-    std::unordered_map<std::string, sf::Texture> textures; // cache for loaded images
     std::string bar_alignment;
     int selected_index = -1;
 
 public:
-    Sidebar(std::vector<std::string> elements, std::vector<sf::Color> colors, std::string alignment = "right") {
+    Sidebar(std::vector<MaterialID> elements, std::vector<sf::Color> colors, std::string alignment = "right") {
         if (elements.size() != colors.size()) {
             std::cerr << "elements and colors provided do not match";
             return;
@@ -35,19 +33,6 @@ public:
         for (int i = 0; i < elements.size(); i++) {
             options.push_back({ elements[i], colors[i] });
         }
-    }
-
-    void add_option_img(const std::string& name, const std::string& filepath) {
-        // Load texture if not already loaded
-        if (textures.find(filepath) == textures.end()) {
-            sf::Texture tex;
-            if (!tex.loadFromFile(filepath)) {
-                std::cerr << "Failed to load image: " << filepath << std::endl;
-                return;
-            }
-            textures[filepath] = std::move(tex);
-        }
-        options.push_back({ name, filepath });
     }
 
     void handle_click(const sf::Vector2i& mouse_pos, sf::RenderWindow& window, int square_size = 32, int padding = 8) {
@@ -98,13 +83,11 @@ public:
         }
     }
 
-    std::string get_selected_of_index() {
+    MaterialID get_selected_of_index() {
         if (selected_index != -1) {
-            return options[selected_index].name;
+            return options[selected_index].id;
         }
-        else {
-            return "none";
-        }
+        return MaterialID::Air;
     }
 
     void draw_sfml(sf::RenderWindow& window, int square_size = 32, int padding = 8) {
@@ -148,26 +131,10 @@ public:
                 square_y = y + padding;
             }
 
-            if (options[i].is_image()) {
-                const std::string& path = options[i].image_path();
-                auto it = textures.find(path);
-                if (it != textures.end()) {
-                    sf::Sprite sprite(it->second);
-                    sprite.setPosition(sf::Vector2f(static_cast<float>(square_x), static_cast<float>(square_y)));
-                    // Scale sprite to fit square_size
-                    auto texSize = it->second.getSize();
-                    float scale_x = square_size / static_cast<float>(texSize.x);
-                    float scale_y = square_size / static_cast<float>(texSize.y);
-                    sprite.setScale(sf::Vector2f(scale_x, scale_y));
-                    window.draw(sprite);
-                }
-            }
-            else {
-                sf::RectangleShape rect(sf::Vector2f(static_cast<float>(square_size), static_cast<float>(square_size)));
-                rect.setPosition(sf::Vector2f(static_cast<float>(square_x), static_cast<float>(square_y)));
-                rect.setFillColor(options[i].color());
-                window.draw(rect);
-            }
+            sf::RectangleShape rect(sf::Vector2f(static_cast<float>(square_size), static_cast<float>(square_size)));
+            rect.setPosition(sf::Vector2f(static_cast<float>(square_x), static_cast<float>(square_y)));
+            rect.setFillColor(options[i].color);
+            window.draw(rect);
 
             if (i == selected_index) {
                 sf::RectangleShape border(sf::Vector2f(static_cast<float>(square_size), static_cast<float>(square_size)));
@@ -178,18 +145,5 @@ public:
                 window.draw(border);
             }
         }
-    }
-
-    void discover_element(std::string element, sf::Color color) {
-        options.push_back({ element, color });
-    }
-
-    bool is_discovered(std::string element) {
-        for (const Option& option : options) {
-            if (option.name == element) {
-                return true;
-            }
-        }
-        return false;
     }
 };

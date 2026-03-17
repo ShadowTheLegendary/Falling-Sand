@@ -96,13 +96,14 @@ void ParticleSimulation::update_temp(Particle& particle, int coordinate_index, s
 
 void ParticleSimulation::update_material(Particle& particle, int coordinate_index) {
     MaterialID new_material = particle.material;
-    float launchpad = 10.f;
+    float launchpad = 5.f;
 
     if ((particle.temp > materials[particle.material].state_change_high_temp) and (materials[particle.material].state_change_high_new != particle.material)) {
         new_material = materials[particle.material].state_change_high_new;
         particle.temp += launchpad;
+        
     }
-    if ((particle.temp > materials[particle.material].state_change_low_temp) and (materials[particle.material].state_change_low_new != particle.material)) {
+    if ((particle.temp < materials[particle.material].state_change_low_temp) and (materials[particle.material].state_change_low_new != particle.material)) {
         new_material = materials[particle.material].state_change_low_new;
         particle.temp -= launchpad;
     }
@@ -213,14 +214,7 @@ void ParticleSimulation::brush(int brush_size, sf::Vector2i mouse_pos, MaterialI
 
             int index = get_index({x, y});
 
-            float temp = particle_layers[index].temp;
-
-            //if (draw_type == "heat") {
-            //    temp += 10.0f * power;
-            //}
-            //else if (draw_type == "cool") {
-            //    temp -= 10.0f * power;
-            //}
+            // float temp = particle_layers[index].temp;
 
             if (x >= 0 and x < size.x and y >= 0 and y < size.y and (particle_layers[index].material == MaterialID::Air or material == MaterialID::Air)) {
                 particle_layers[index].temp = 20.0;
@@ -229,8 +223,8 @@ void ParticleSimulation::brush(int brush_size, sf::Vector2i mouse_pos, MaterialI
                 particle_layers[index].color = random_color(material);
             }
 
-            temp = std::clamp(temp, -273.0f, 5000.0f);
-            particle_layers[index].temp = temp;
+            //temp = std::clamp(temp, -273.0f, 5000.0f);
+            //particle_layers[index].temp = temp;
         }
     }
 }
@@ -349,7 +343,7 @@ void ParticleSimulation::draw_particle_information_sfml(sf::RenderWindow& window
 
     Particle particle = particle_layers[index];
 
-    sf::Text info(arial, materials[particle.material].identifier + "\nTemp: " + round_to_str(particle.temp) + "c\nState: " + behaviors[materials[particle.material].behavior].identifier, 15U);
+    sf::Text info(arial, materials[particle.material].identifier + "\nTemp: " + std::to_string(particle.temp) + "c\nState: " + behaviors[materials[particle.material].behavior].identifier, 15U);
     info.setPosition(sf::Vector2f(512, 300));
     window.draw(info);
 
