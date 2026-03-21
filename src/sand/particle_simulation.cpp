@@ -202,14 +202,14 @@ void ParticleSimulation::update() {
 }
 
 
-void ParticleSimulation::brush(int brush_size, sf::Vector2i mouse_pos, MaterialID material, float power) {
+void ParticleSimulation::brush(int brush_size, sf::Vector2i position, MaterialID material) {
     int cell_stride = cell_px + gap;
 
-    if (mouse_pos.x < 0 or mouse_pos.y < 0 or mouse_pos.x > size.x * cell_stride or mouse_pos.y > size.y * cell_stride) {
+    if (position.x < 0 or position.y < 0 or position.x > size.x * cell_stride or position.y > size.y * cell_stride) {
         return;
     }
 
-    sf::Vector2i grid = mouse_pos / cell_stride;
+    sf::Vector2i grid = position / cell_stride;
     int half = brush_size / 2;
 
     for (int i = -half; i <= half; ++i) {
@@ -223,23 +223,18 @@ void ParticleSimulation::brush(int brush_size, sf::Vector2i mouse_pos, MaterialI
 
             int index = get_index({x, y});
 
-            // float temp = particle_layers[index].temp;
-
             if (x >= 0 and x < size.x and y >= 0 and y < size.y and (particle_layers[index].material == MaterialID::Air or material == MaterialID::Air)) {
                 particle_layers[index].temp = 20.0;
                 particle_layers[index].material = material;
 
                 particle_layers[index].color = random_color(material);
             }
-
-            //temp = std::clamp(temp, -273.0f, 5000.0f);
-            //particle_layers[index].temp = temp;
         }
     }
 }
 
 
-void ParticleSimulation::draw_sfml(sf::RenderWindow& window, bool use_temp_coloring, int cell_size) {
+void ParticleSimulation::draw_sfml(sf::RenderTarget& target, bool use_temp_coloring) {
     const int grid_size_x = size.x;
     const int grid_size_y = size.y;
 
@@ -307,7 +302,7 @@ void ParticleSimulation::draw_sfml(sf::RenderWindow& window, bool use_temp_color
                 )
             );
             cell.setFillColor(color);
-            window.draw(cell);
+            target.draw(cell);
         }
     }
 }

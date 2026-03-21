@@ -91,7 +91,7 @@ int main() {
         }
 
         if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)) {
-            sim.brush(brush_size, mouse_pos, sidebar.get_selected_of_index(), 5);
+            sim.brush(brush_size, mouse_pos, sidebar.get_selected_of_index());
         }
 
         if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Right)) {
