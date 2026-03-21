@@ -1,5 +1,7 @@
 #pragma once
 
+// fully striped and soon to be replaced
+
 #include <string>
 #include <vector>
 #include <iostream>
