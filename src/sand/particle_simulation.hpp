@@ -12,8 +12,6 @@
 
 class ParticleSimulation {
 public:
-	int particle_count = 0;
-
 	//////////////////////////////////////
 	// \brief Initializes an empty simulation
 	// \param size the size of the simulation {width, height}
@@ -42,14 +40,13 @@ public:
 
 	void draw_brush_outline_sfml(sf::RenderWindow& window, int brush_size, sf::Vector2i mouse_pos);
 
-	void draw_particle_information_sfml(sf::RenderWindow& window, sf::Vector2i mouse_pos);
+	void draw_particle_information_sfml(sf::RenderWindow& window, sf::Vector2i mouse_pos); // TODO: Change to return particle information
+
+	std::size_t get_particle_count() {
+		return particle_count;
+	}
 
 private:
-	sf::Vector2i size;
-
-	std::vector<Particle> particle_layers;
-	std::vector<Particle> pending_particle_layers;
-
 	int get_index(sf::Vector2i position) const;
 
 	sf::Vector2i get_coordinate(int index) const;
@@ -66,6 +63,16 @@ private:
 
 	void update_particle(sf::Vector2i coordinate);
 
-	int cell_px = 8;
-	int gap = 1;
+	sf::Vector2i size;
+
+	std::vector<Particle> particle_layers;
+	std::vector<Particle> pending_particle_layers;
+
+	std::size_t particle_count = 0;
+
+	std::size_t multithreading_core_count = 4;
+	unsigned int multithreading_kernel_size = 8;
+
+	std::uint8_t cell_px = 8;
+	std::uint8_t gap = 1;
 };

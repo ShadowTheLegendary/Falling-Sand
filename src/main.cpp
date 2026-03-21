@@ -26,7 +26,7 @@ int main() {
 
     ParticleSimulation sim({64, 32});
 
-    Sidebar sidebar({ MaterialID::Sand, MaterialID::Rock, MaterialID::Water }, { sf::Color(255, 255, 0), sf::Color(128, 128, 128), sf::Color(0, 128, 255) });
+    Sidebar sidebar({ MaterialID::Sand, MaterialID::Rock, MaterialID::Water, MaterialID::Steam }, { sf::Color(255, 255, 0), sf::Color(128, 128, 128), sf::Color(0, 128, 255), sf::Color::Green });
 
     bool paused = false;
     int brush_size = 5;
@@ -109,7 +109,7 @@ int main() {
             << "selected element: " << materials[sidebar.get_selected_of_index()].identifier
             << "\ndisplay mode: " << display_mode_info
             << "\nFPS: " << std::format("{:.1f}", fps) << "/" << playback_speed
-            << "\nParticles: " << sim.particle_count;
+            << "\nParticles: " << sim.get_particle_count();
 
         info_top.setString(oss.str());
 

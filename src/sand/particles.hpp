@@ -221,10 +221,10 @@ inline void register_materials() {
     materials[MaterialID::Steam] = {
         .behavior = BehaviorID::Gas,
         .identifier = "gas",
-        .density = 0.0f,
+        .density = 0.01f,
         .state_change_high_temp = 0,
         .state_change_high_new = MaterialID::Steam,
-        .state_change_low_temp = 99,
+        .state_change_low_temp = 0,
         .state_change_low_new = MaterialID::Water,
         .base_color = sf::Color(200, 200, 200),
         .color_offset = 5,

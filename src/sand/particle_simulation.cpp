@@ -4,6 +4,8 @@
 #include <sstream>
 #include <random>
 #include <format>
+#include <thread>
+#include <iostream>
 
 #include "particle_simulation.hpp"
 #include "particles.hpp"
@@ -33,6 +35,9 @@ sf::Vector2i ParticleSimulation::get_coordinate(int index) const {
 
 
 ParticleSimulation::ParticleSimulation(sf::Vector2i size) : size(size) {
+    unsigned int thread_count = std::thread::hardware_concurrency();
+    multithreading_core_count = thread_count ? thread_count : 4;
+
     std::vector<Particle> temporary_buffer;
 
     size_t len = size.x * size.y;
@@ -139,9 +144,28 @@ void ParticleSimulation::update_movement(Particle& particle, sf::Vector2i coordi
     std::vector<int> valid_weights;
 
     for (int i = 0; i < 9; i++) {
-        int index = get_index(coordinate + offsets[i]);
+        int weight = behaviors[materials[particle.material].behavior].movement_weights[i];
+        if (weight == 0) {
+            continue;
+        }
 
-        if ((index == -1) or (materials[particle.material].density < materials[particle_layers[index].material].density) or pending_particle_layers[index].moved) {
+        if (i == 4) { 
+            valid_moves.push_back(i); 
+            valid_weights.push_back(weight); 
+            continue; 
+        }
+
+        int index = get_index(coordinate + offsets[i]);
+        if (index == -1) {
+            continue;
+        }
+
+        if (pending_particle_layers[index].moved) {
+            continue;
+        }
+
+        bool denser = materials[particle.material].density > materials[particle_layers[index].material].density;
+        if (not denser) {
             continue;
         }
 
