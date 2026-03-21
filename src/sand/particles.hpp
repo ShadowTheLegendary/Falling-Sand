@@ -1,12 +1,16 @@
-#pragma once
+﻿#pragma once
 
 #include <SFML/Graphics/Color.hpp>
 
-#include <unordered_map>
 #include <string>
+#include <random>
+#include <cstdint>
+#include <algorithm>
+#include <array>
+#include <vector>
 
 
-extern std::mt19937 gen;
+inline std::mt19937 gen(std::random_device{}());
 
 
 enum class MaterialID : uint8_t {
@@ -230,7 +234,7 @@ inline void register_materials() {
 
 inline sf::Color random_color(MaterialID material) {
     sf::Color color = materials[material].base_color;
-    std::uniform_int_distribution<int> color_dist(materials[material].color_offset * -1, materials[material].color_offset);
+    std::uniform_int_distribution<int> color_dist(-materials[material].color_offset, materials[material].color_offset);
 
     int r = std::clamp(static_cast<int>(color.r) + color_dist(gen), 0, 255);
     int g = std::clamp(static_cast<int>(color.g) + color_dist(gen), 0, 255);

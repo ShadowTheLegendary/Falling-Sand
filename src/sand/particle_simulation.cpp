@@ -1,20 +1,16 @@
-#include <SFML/Graphics.hpp>
+﻿#include <SFML/Graphics.hpp>
 
-#include <iostream>
 #include <vector>
-#include <utility>
-#include <cstring>
-#include <iomanip>
 #include <sstream>
 #include <random>
-#include <unordered_map>
+#include <format>
 
 #include "particle_simulation.hpp"
 #include "particles.hpp"
 
-std::mt19937 gen(std::random_device{}());
 
-inline sf::Font arial("fonts/ARIAL.TTF");
+sf::Font arial("fonts/Arial.ttf");
+
 
 int ParticleSimulation::get_index(sf::Vector2i position) const {
     if (position.x < 0 or position.x >= size.x or position.y < 0 or position.y >= size.y) {
@@ -24,16 +20,17 @@ int ParticleSimulation::get_index(sf::Vector2i position) const {
     return position.y * size.x + position.x;
 }
 
+
 sf::Vector2i ParticleSimulation::get_coordinate(int index) const {
     if (index < 0 or index >= size.x * size.y) {
         return { -1, -1 };
     }
 
-    int x = index % size.x;
-    int y = index / size.x;
-    sf::Vector2i position = { x, y };
-    return position;
+    const int x = index % size.x;
+    const int y = index / size.x;
+    return { x, y };
 }
+
 
 ParticleSimulation::ParticleSimulation(sf::Vector2i size) : size(size) {
     std::vector<Particle> temporary_buffer;
@@ -42,12 +39,15 @@ ParticleSimulation::ParticleSimulation(sf::Vector2i size) : size(size) {
     particle_layers.resize(len);
 
     for (int i = 0; i < len; i++) {
-        particle_layers[i] = Particle();
-        particle_layers[i].material = MaterialID::Air;
+        Particle particle;
+        particle.temp = 20;
+        particle.material = MaterialID::Air;
+        particle_layers[i] = particle;
     }
 
     pending_particle_layers = particle_layers;
 }
+
 
 std::vector<sf::Vector2i> ParticleSimulation::get_surroundings(sf::Vector2i pos) const {
     static const sf::Vector2i offsets[8] = {
@@ -66,9 +66,10 @@ std::vector<sf::Vector2i> ParticleSimulation::get_surroundings(sf::Vector2i pos)
     return neighbors;
 }
 
+
 void ParticleSimulation::swap(sf::Vector2i a, sf::Vector2i b) {
-    int index_a = get_index(a);
-    int index_b = get_index(b);
+    const int index_a = get_index(a);
+    const int index_b = get_index(b);
 
     pending_particle_layers[index_a] = particle_layers[index_b];
     pending_particle_layers[index_b] = particle_layers[index_a];
@@ -76,16 +77,19 @@ void ParticleSimulation::swap(sf::Vector2i a, sf::Vector2i b) {
     pending_particle_layers[index_b].moved = true;
 }
 
+
 void ParticleSimulation::update_temp(Particle& particle, int coordinate_index, std::vector<sf::Vector2i>& surroundings) {
-    float temp_transfer = 0.1f;
+    static const float temp_transfer = 0.1f;
     float delta = 0.0f;
 
     for (const sf::Vector2i& coords : surroundings) {
-        float extern_temp = particle_layers[get_index({coords.x, coords.y})].temp;
+        int extern_index = get_index({ coords.x, coords.y });
 
-        if (particle_layers[get_index({coords.x, coords.y})].material == MaterialID::Air) {
+        if (particle_layers[extern_index].material == MaterialID::Air) {
             continue;
         }
+
+        float extern_temp = particle_layers[extern_index].temp;
 
         delta += temp_transfer * (extern_temp - particle.temp);
     }
@@ -93,6 +97,7 @@ void ParticleSimulation::update_temp(Particle& particle, int coordinate_index, s
     pending_particle_layers[coordinate_index].temp = particle.temp + delta;
     pending_particle_layers[coordinate_index].temp = std::clamp(pending_particle_layers[coordinate_index].temp, -273.0f, 5000.0f);
 }
+
 
 void ParticleSimulation::update_material(Particle& particle, int coordinate_index) {
     MaterialID new_material = particle.material;
@@ -118,14 +123,15 @@ void ParticleSimulation::update_material(Particle& particle, int coordinate_inde
     pending_particle_layers[coordinate_index] = particle;
 }
 
-void ParticleSimulation::update_movement(Particle& particle, sf::Vector2i coordinate, std::vector<sf::Vector2i>& surroundings) {
+
+void ParticleSimulation::update_movement(Particle& particle, sf::Vector2i coordinate, int coordinate_index, std::vector<sf::Vector2i>& surroundings) {
     const static std::vector<sf::Vector2i> offsets = {
         { -1, -1 }, { 0, -1 }, { 1, -1 },
         { -1, 0 }, { 0, 0 }, { 1, 0 },
         { -1, 1}, { 0, 1 }, { 1, 1 }
     };
 
-    if (pending_particle_layers[get_index(coordinate)].moved) {
+    if (pending_particle_layers[coordinate_index].moved) {
         return;
     }
 
@@ -155,15 +161,16 @@ void ParticleSimulation::update_movement(Particle& particle, sf::Vector2i coordi
     swap(coordinate, coordinate + offsets[move_index]);
 }
 
+
 void ParticleSimulation::update_particle(sf::Vector2i coordinate) {
-    Particle particle = particle_layers[get_index(coordinate)];
-            
-    if (particle.material == MaterialID::Air) {
+    int coordinate_index = get_index(coordinate);
+
+    if (particle_layers[coordinate_index].material == MaterialID::Air) {
         return;
     }
     particle_count++;
 
-    int coordinate_index = get_index(coordinate);
+    Particle particle = particle_layers[coordinate_index];
 
     std::vector<sf::Vector2i> surroundings = get_surroundings(coordinate);
 
@@ -171,8 +178,9 @@ void ParticleSimulation::update_particle(sf::Vector2i coordinate) {
     
     update_material(particle, coordinate_index);
 
-    update_movement(particle, coordinate, surroundings);
+    update_movement(particle, coordinate, coordinate_index, surroundings);
 }
+
 
 void ParticleSimulation::update() {
     pending_particle_layers = particle_layers;
@@ -192,6 +200,7 @@ void ParticleSimulation::update() {
 
     particle_layers = pending_particle_layers;
 }
+
 
 void ParticleSimulation::brush(int brush_size, sf::Vector2i mouse_pos, MaterialID material, float power) {
     int cell_stride = cell_px + gap;
@@ -228,6 +237,7 @@ void ParticleSimulation::brush(int brush_size, sf::Vector2i mouse_pos, MaterialI
         }
     }
 }
+
 
 void ParticleSimulation::draw_sfml(sf::RenderWindow& window, bool use_temp_coloring, int cell_size) {
     const int grid_size_x = size.x;
@@ -302,6 +312,7 @@ void ParticleSimulation::draw_sfml(sf::RenderWindow& window, bool use_temp_color
     }
 }
 
+
 void ParticleSimulation::draw_brush_outline_sfml(sf::RenderWindow& window, int brush_size, sf::Vector2i mouse_pos) {
     int cell_stride = cell_px + gap;
 
@@ -330,6 +341,7 @@ void ParticleSimulation::draw_brush_outline_sfml(sf::RenderWindow& window, int b
     window.draw(outline);
 }
 
+
 void ParticleSimulation::draw_particle_information_sfml(sf::RenderWindow& window, sf::Vector2i mouse_pos) {
     int cell_stride = cell_px + gap;
     
@@ -343,7 +355,7 @@ void ParticleSimulation::draw_particle_information_sfml(sf::RenderWindow& window
 
     Particle particle = particle_layers[index];
 
-    sf::Text info(arial, materials[particle.material].identifier + "\nTemp: " + std::to_string(particle.temp) + "c\nState: " + behaviors[materials[particle.material].behavior].identifier, 15U);
+    sf::Text info(arial, materials[particle.material].identifier + "\nTemp: " + std::format("{:.2f}", particle.temp) + "c\nState: " + behaviors[materials[particle.material].behavior].identifier, 15U);
     info.setPosition(sf::Vector2f(512, 300));
     window.draw(info);
 
