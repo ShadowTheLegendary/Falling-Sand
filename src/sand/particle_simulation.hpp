@@ -10,6 +10,16 @@
 
 #include "particles.hpp"
 
+
+class ParticleInformation {
+public:
+	bool valid_particle = false;
+    std::string material_name = "";
+    std::string behavior_name = "";
+    float temp = 0;
+};
+
+
 class ParticleSimulation {
 public:
 	//////////////////////////////////////
@@ -40,7 +50,11 @@ public:
 
 	void draw_brush_outline_sfml(sf::RenderWindow& window, int brush_size, sf::Vector2i mouse_pos);
 
-	void draw_particle_information_sfml(sf::RenderWindow& window, sf::Vector2i mouse_pos); // TODO: Change to return particle information
+	//////////////////////////////////////
+	// \brief Returns information about the particle at position
+	// \param position The position (relative to the window) of the particle you want the info of
+	//////////////////////////////////////
+	ParticleInformation get_particle_information(sf::Vector2i position);
 
 	std::size_t get_particle_count() {
 		return particle_count;

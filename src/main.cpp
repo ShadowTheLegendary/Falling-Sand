@@ -25,19 +25,23 @@ int main() {
     edit_viewport(window, view, {640, 360});
 
     ParticleSimulation sim({64, 32});
-
     Sidebar sidebar({ MaterialID::Sand, MaterialID::Rock, MaterialID::Water, MaterialID::Steam }, { sf::Color(255, 255, 0), sf::Color(128, 128, 128), sf::Color(0, 128, 255), sf::Color::Green });
 
-    bool paused = false;
     int brush_size = 5;
 
     sf::Vector2i mouse_pos;
 
     sf::Font arial("fonts/Arial.ttf");
 
-    sf::Text info_top(arial, "", 15U);
-    info_top.setPosition(sf::Vector2f(15, 268));
+    sf::Text general_info(arial, "", 15U);
+    general_info.setPosition(sf::Vector2f(15, 268));
+
+    sf::Text particle_info(arial, "", 15U);
+    particle_info.setPosition(sf::Vector2f(450, 288));
+
+    bool paused = false;
     std::string paused_info = "\n";
+
     std::string display_mode_info = "standard";
 
     FpsCounter counter;
@@ -46,6 +50,7 @@ int main() {
         mouse_pos = sf::Mouse::getPosition(window);
         float fps = counter.update();
 
+        // Handle input
         while (const std::optional event = window.pollEvent()) {
             if (event->is<sf::Event::Closed>() or sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Escape)) {
                 window.close();
@@ -102,24 +107,38 @@ int main() {
             sim.update();
         }
 
-        window.clear();
-
-        std::ostringstream oss;
-        oss << paused_info
+        // Update ui
+        std::ostringstream general_info_str;
+        general_info_str << paused_info
             << "selected element: " << materials[sidebar.get_selected_of_index()].identifier
             << "\ndisplay mode: " << display_mode_info
             << "\nFPS: " << std::format("{:.1f}", fps) << "/" << playback_speed
             << "\nParticles: " << sim.get_particle_count();
 
-        info_top.setString(oss.str());
+        general_info.setString(general_info_str.str());
+
+        ParticleInformation info = sim.get_particle_information(mouse_pos);
+
+        if (info.valid_particle) {
+            std::ostringstream particle_info_str;
+            particle_info_str << info.material_name << "\n"
+            << info.behavior_name << "\n"
+            << info.temp << "c\n";
+            particle_info.setString(particle_info_str.str());
+        }
+        else {
+            particle_info.setString("");
+        }
+
+        window.clear();
 
         sim.draw_sfml(window, false);
         sim.draw_brush_outline_sfml(window, brush_size, mouse_pos);
-        sim.draw_particle_information_sfml(window, mouse_pos);
 
         sidebar.draw_sfml(window);
 
-        window.draw(info_top);
+        window.draw(particle_info);
+        window.draw(general_info);
 
         window.display();
     }

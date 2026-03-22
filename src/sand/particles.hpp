@@ -220,7 +220,7 @@ inline void register_materials() {
     
     materials[MaterialID::Steam] = {
         .behavior = BehaviorID::Gas,
-        .identifier = "gas",
+        .identifier = "steam",
         .density = 0.01f,
         .state_change_high_temp = 0,
         .state_change_high_new = MaterialID::Steam,

@@ -365,7 +365,7 @@ void ParticleSimulation::draw_brush_outline_sfml(sf::RenderWindow& window, int b
 }
 
 
-void ParticleSimulation::draw_particle_information_sfml(sf::RenderWindow& window, sf::Vector2i mouse_pos) {
+ParticleInformation ParticleSimulation::get_particle_information(sf::Vector2i position) {
     int cell_stride = cell_px + gap;
     
     sf::Vector2i mouse_pos_grid = mouse_pos / cell_stride;
@@ -373,13 +373,16 @@ void ParticleSimulation::draw_particle_information_sfml(sf::RenderWindow& window
     int index = get_index(mouse_pos_grid);
 
     if (index == -1) {
-        return;
+        return ParticleInformation();
     }
 
     Particle particle = particle_layers[index];
 
-    sf::Text info(arial, materials[particle.material].identifier + "\nTemp: " + std::format("{:.2f}", particle.temp) + "c\nState: " + behaviors[materials[particle.material].behavior].identifier, 15U);
-    info.setPosition(sf::Vector2f(512, 300));
-    window.draw(info);
+    ParticleInformation info;
+    info.valid_particle = true;
+    info.material_name = materials[particle.material].identifier;
+    info.behavior_name = behaviors[materials[particle.material].behavior].identifier;
+    info.temp = particle.temp;
 
+    return info;
 }
