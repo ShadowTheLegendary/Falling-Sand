@@ -13,26 +13,9 @@
 
 sf::Font arial("fonts/Arial.ttf");
 
-
-int ParticleSimulation::get_index(sf::Vector2i position) const {
-    if (position.x < 0 or position.x >= size.x or position.y < 0 or position.y >= size.y) {
-        return -1;
-    }
-
-    return position.y * size.x + position.x;
-}
-
-
-sf::Vector2i ParticleSimulation::get_coordinate(int index) const {
-    if (index < 0 or index >= size.x * size.y) {
-        return { -1, -1 };
-    }
-
-    const int x = index % size.x;
-    const int y = index / size.x;
-    return { x, y };
-}
-
+/////////////////////////////////////////////
+// Public functions for ParticleSimulation //
+/////////////////////////////////////////////
 
 ParticleSimulation::ParticleSimulation(sf::Vector2i size) : size(size) {
     unsigned int thread_count = std::thread::hardware_concurrency();
@@ -47,164 +30,6 @@ ParticleSimulation::ParticleSimulation(sf::Vector2i size) : size(size) {
         particle.material = MaterialID::Air;
         particle_layers[i] = particle;
     }
-}
-
-
-std::vector<sf::Vector2i> ParticleSimulation::get_surroundings(sf::Vector2i pos) const {
-    static const sf::Vector2i offsets[8] = {
-        {-1, -1}, {0, -1}, {1, -1},
-        {-1,  0},          {1,  0},
-        {-1,  1}, {0,  1}, {1,  1}
-    };
-
-    std::vector<sf::Vector2i> neighbors;
-    for (int i = 0; i < 8; i++) {
-        sf::Vector2i new_position = pos + offsets[i];
-        if (new_position.x >= 0 and new_position.x < size.x and new_position.y >= 0 and new_position.y < size.y) {
-            neighbors.push_back(new_position);
-        }
-    }
-    return neighbors;
-}
-
-
-void ParticleSimulation::swap(sf::Vector2i a, sf::Vector2i b) {
-    const int index_a = get_index(a);
-    const int index_b = get_index(b);
-
-    const Particle particle_a = particle_layers[index_a];
-
-    particle_layers[index_a] = particle_layers[index_b];
-    particle_layers[index_b] = particle_a;
-    particle_layers[index_a].moved = true;
-    particle_layers[index_b].moved = true;
-}
-
-
-void ParticleSimulation::update_temp(Particle& particle, int coordinate_index, std::vector<sf::Vector2i>& surroundings) {
-    static const float temp_transfer = 0.1f;
-    float delta = 0.0f;
-
-    for (const sf::Vector2i& coords : surroundings) {
-        int extern_index = get_index({ coords.x, coords.y });
-
-        if (particle_layers[extern_index].material == MaterialID::Air) {
-            continue;
-        }
-
-        float extern_temp = particle_layers[extern_index].temp;
-
-        delta += temp_transfer * (extern_temp - particle.temp);
-    }
-
-    particle_layers[coordinate_index].temp = particle.temp + delta;
-    particle_layers[coordinate_index].temp = std::clamp(particle_layers[coordinate_index].temp, -273.0f, 5000.0f);
-}
-
-
-void ParticleSimulation::update_material(Particle& particle, int coordinate_index) {
-    MaterialID new_material = particle.material;
-    float launchpad = 5.f;
-
-    if ((particle.temp > materials[particle.material].state_change_high_temp) and (materials[particle.material].state_change_high_new != particle.material)) {
-        new_material = materials[particle.material].state_change_high_new;
-        particle.temp += launchpad;
-        
-    }
-    if ((particle.temp < materials[particle.material].state_change_low_temp) and (materials[particle.material].state_change_low_new != particle.material)) {
-        new_material = materials[particle.material].state_change_low_new;
-        particle.temp -= launchpad;
-    }
-
-    if (new_material == particle.material) {
-        return;
-    }
-
-    particle.material = new_material;
-    particle.color = random_color(particle.material);
-
-    particle_layers[coordinate_index] = particle;
-}
-
-
-void ParticleSimulation::update_movement(Particle& particle, sf::Vector2i coordinate, int coordinate_index, std::vector<sf::Vector2i>& surroundings) {
-    const static std::vector<sf::Vector2i> offsets = {
-        { -1, -1 }, { 0, -1 }, { 1, -1 },
-        { -1, 0 }, { 0, 0 }, { 1, 0 },
-        { -1, 1}, { 0, 1 }, { 1, 1 }
-    };
-
-    if (particle_layers[coordinate_index].moved) {
-        return;
-    }
-
-    std::vector<int> valid_moves;
-    std::vector<int> valid_weights;
-
-    for (int i = 0; i < 9; i++) {
-        int weight = behaviors[materials[particle.material].behavior].movement_weights[i];
-        if (weight == 0) {
-            continue;
-        }
-
-        if (i == 4) { 
-            valid_moves.push_back(i); 
-            valid_weights.push_back(weight); 
-            continue; 
-        }
-
-        int index = get_index(coordinate + offsets[i]);
-        if (index == -1) {
-            continue;
-        }
-
-        if (particle_layers[index].moved) {
-            continue;
-        }
-
-        bool denser = materials[particle.material].density > materials[particle_layers[index].material].density;
-        if (not denser) {
-            continue;
-        }
-
-        valid_moves.push_back(i);
-        valid_weights.push_back(behaviors[materials[particle.material].behavior].movement_weights[i]);
-    }
-
-    if (valid_moves.empty()) {
-        return;
-    }
-
-    std::discrete_distribution<> dist(valid_weights.begin(), valid_weights.end());
-
-    int choice = dist(gen);
-    int move_index = valid_moves[choice];
-
-    if (move_index == 4) {
-        return; // Don't mark particle as moved when it stayed still
-    }
-
-    swap(coordinate, coordinate + offsets[move_index]);
-}
-
-
-void ParticleSimulation::update_particle(sf::Vector2i coordinate) {
-    int coordinate_index = get_index(coordinate);
-
-    if (particle_layers[coordinate_index].material == MaterialID::Air) {
-        return;
-    }
-    particle_count++;
-
-    Particle particle = particle_layers[coordinate_index];
-
-    std::vector<sf::Vector2i> surroundings = get_surroundings(coordinate);
-
-    update_temp(particle, coordinate_index, surroundings);
-    
-    update_material(particle, coordinate_index);
-
-    update_movement(particle, coordinate, coordinate_index, surroundings);
 }
 
 
@@ -380,4 +205,191 @@ ParticleInformation ParticleSimulation::get_particle_information(sf::Vector2i po
     info.temp = particle.temp;
 
     return info;
+}
+
+
+std::size_t ParticleSimulation::get_particle_count() {
+    return particle_count;
+}
+
+
+//////////////////////////////////////////////
+// Private functions for ParticleSimulation //
+//////////////////////////////////////////////
+
+int ParticleSimulation::get_index(sf::Vector2i position) const {
+    if (position.x < 0 or position.x >= size.x or position.y < 0 or position.y >= size.y) {
+        return -1;
+    }
+
+    return position.y * size.x + position.x;
+}
+
+
+sf::Vector2i ParticleSimulation::get_coordinate(int index) const {
+    if (index < 0 or index >= size.x * size.y) {
+        return { -1, -1 };
+    }
+
+    const int x = index % size.x;
+    const int y = index / size.x;
+    return { x, y };
+}
+
+
+std::vector<sf::Vector2i> ParticleSimulation::get_surroundings(sf::Vector2i pos) const {
+    static const sf::Vector2i offsets[8] = {
+        {-1, -1}, {0, -1}, {1, -1},
+        {-1,  0},          {1,  0},
+        {-1,  1}, {0,  1}, {1,  1}
+    };
+
+    std::vector<sf::Vector2i> neighbors;
+    for (int i = 0; i < 8; i++) {
+        sf::Vector2i new_position = pos + offsets[i];
+        if (new_position.x >= 0 and new_position.x < size.x and new_position.y >= 0 and new_position.y < size.y) {
+            neighbors.push_back(new_position);
+        }
+    }
+    return neighbors;
+}
+
+
+void ParticleSimulation::swap(sf::Vector2i a, sf::Vector2i b) {
+    const int index_a = get_index(a);
+    const int index_b = get_index(b);
+
+    const Particle particle_a = particle_layers[index_a];
+
+    particle_layers[index_a] = particle_layers[index_b];
+    particle_layers[index_b] = particle_a;
+    particle_layers[index_a].moved = true;
+    particle_layers[index_b].moved = true;
+}
+
+
+void ParticleSimulation::update_temp(Particle& particle, int coordinate_index, std::vector<sf::Vector2i>& surroundings) {
+    static const float temp_transfer = 0.1f;
+    float delta = 0.0f;
+
+    for (const sf::Vector2i& coords : surroundings) {
+        int extern_index = get_index({ coords.x, coords.y });
+
+        if (particle_layers[extern_index].material == MaterialID::Air) {
+            continue;
+        }
+
+        float extern_temp = particle_layers[extern_index].temp;
+
+        delta += temp_transfer * (extern_temp - particle.temp);
+    }
+
+    particle_layers[coordinate_index].temp = particle.temp + delta;
+    particle_layers[coordinate_index].temp = std::clamp(particle_layers[coordinate_index].temp, -273.0f, 5000.0f);
+}
+
+
+void ParticleSimulation::update_material(Particle& particle, int coordinate_index) {
+    MaterialID new_material = particle.material;
+    float launchpad = 5.f;
+
+    if ((particle.temp > materials[particle.material].state_change_high_temp) and (materials[particle.material].state_change_high_new != particle.material)) {
+        new_material = materials[particle.material].state_change_high_new;
+        particle.temp += launchpad;
+        
+    }
+    if ((particle.temp < materials[particle.material].state_change_low_temp) and (materials[particle.material].state_change_low_new != particle.material)) {
+        new_material = materials[particle.material].state_change_low_new;
+        particle.temp -= launchpad;
+    }
+
+    if (new_material == particle.material) {
+        return;
+    }
+
+    particle.material = new_material;
+    particle.color = random_color(particle.material);
+
+    particle_layers[coordinate_index] = particle;
+}
+
+
+void ParticleSimulation::update_movement(Particle& particle, sf::Vector2i coordinate, int coordinate_index, std::vector<sf::Vector2i>& surroundings) {
+    const static std::vector<sf::Vector2i> offsets = {
+        { -1, -1 }, { 0, -1 }, { 1, -1 },
+        { -1, 0 }, { 0, 0 }, { 1, 0 },
+        { -1, 1}, { 0, 1 }, { 1, 1 }
+    };
+
+    if (particle_layers[coordinate_index].moved) {
+        return;
+    }
+
+    std::vector<int> valid_moves;
+    std::vector<int> valid_weights;
+
+    for (int i = 0; i < 9; i++) {
+        int weight = behaviors[materials[particle.material].behavior].movement_weights[i];
+        if (weight == 0) {
+            continue;
+        }
+
+        if (i == 4) { 
+            valid_moves.push_back(i); 
+            valid_weights.push_back(weight); 
+            continue; 
+        }
+
+        int index = get_index(coordinate + offsets[i]);
+        if (index == -1) {
+            continue;
+        }
+
+        if (particle_layers[index].moved) {
+            continue;
+        }
+
+        bool denser = materials[particle.material].density > materials[particle_layers[index].material].density;
+        if (not denser) {
+            continue;
+        }
+
+        valid_moves.push_back(i);
+        valid_weights.push_back(behaviors[materials[particle.material].behavior].movement_weights[i]);
+    }
+
+    if (valid_moves.empty()) {
+        return;
+    }
+
+    std::discrete_distribution<> dist(valid_weights.begin(), valid_weights.end());
+
+    int choice = dist(gen);
+    int move_index = valid_moves[choice];
+
+    if (move_index == 4) {
+        return; // Don't mark particle as moved when it stayed still
+    }
+
+    swap(coordinate, coordinate + offsets[move_index]);
+}
+
+
+void ParticleSimulation::update_particle(sf::Vector2i coordinate) {
+    int coordinate_index = get_index(coordinate);
+
+    if (particle_layers[coordinate_index].material == MaterialID::Air) {
+        return;
+    }
+    particle_count++;
+
+    Particle particle = particle_layers[coordinate_index];
+
+    std::vector<sf::Vector2i> surroundings = get_surroundings(coordinate);
+
+    update_temp(particle, coordinate_index, surroundings);
+    
+    update_material(particle, coordinate_index);
+
+    update_movement(particle, coordinate, coordinate_index, surroundings);
 }

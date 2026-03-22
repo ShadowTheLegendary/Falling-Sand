@@ -22,43 +22,44 @@ public:
 
 class ParticleSimulation {
 public:
-	//////////////////////////////////////
-	// \brief Initializes an empty simulation
-	// \param size the size of the simulation {width, height}
-	//////////////////////////////////////
+	////////////////////////////////////////////////////////////
+	// \brief Initializes an empty simulation                 
+	// \param size the size of the simulation {width, height} 
+	////////////////////////////////////////////////////////////
     ParticleSimulation(sf::Vector2i size);
 
-	//////////////////////////////////////
-	// \brief Updates the simulation one step
-	//////////////////////////////////////
+	////////////////////////////////////////////
+	// \brief Updates the simulation one step 
+	////////////////////////////////////////////
 	void update();
 
-	//////////////////////////////////////
-	// \brief Manipulates values in the simulation 
-	// \param brush_size The size of the square of influence
-	// \param position The center of the square of influence
-	// \param material Every pixel in the square of influence will be set to this material
-	//////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////
+	// \brief Manipulates values in the simulation                                         
+	// \param brush_size The size of the square of influence                               
+	// \param position The center of the square of influence                               
+	// \param material Every pixel in the square of influence will be set to this material 
+	/////////////////////////////////////////////////////////////////////////////////////////
 	void brush(int brush_size, sf::Vector2i position, MaterialID material);
 
-	//////////////////////////////////////
-	// \brief Draws the current state of the simulation using sfml
-	// \param target The sfml target to draw the image to
-	// \param use_temp_coloring If true the colors will be based on the particles temp
-	//////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////
+	// \brief Draws the current state of the simulation using sfml                     
+	// \param target The sfml target to draw the image to                            
+	// \param use_temp_coloring If true the colors will be based on the particles temp 
+	/////////////////////////////////////////////////////////////////////////////////////
 	void draw_sfml(sf::RenderTarget& target, bool use_temp_coloring = false);
 
 	void draw_brush_outline_sfml(sf::RenderWindow& window, int brush_size, sf::Vector2i mouse_pos);
 
-	//////////////////////////////////////
-	// \brief Returns information about the particle at position
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	// \brief Returns information about the particle at position                                 
 	// \param position The position (relative to the window) of the particle you want the info of
-	//////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////
 	ParticleInformation get_particle_information(sf::Vector2i position);
 
-	std::size_t get_particle_count() {
-		return particle_count;
-	}
+	///////////////////////////////////////////////////////////////////////////////////////////////////////
+	// \brief Returns the number of non air particles in the simulation, needs to be called after update
+	///////////////////////////////////////////////////////////////////////////////////////////////////////
+	std::size_t get_particle_count();
 
 private:
 	int get_index(sf::Vector2i position) const;
