@@ -182,6 +182,10 @@ void ParticleSimulation::update_movement(Particle& particle, sf::Vector2i coordi
     int choice = dist(gen);
     int move_index = valid_moves[choice];
 
+    if (move_index == 4) {
+        return; // Don't mark particle as moved when it stayed still
+    }
+
     swap(coordinate, coordinate + offsets[move_index]);
 }
 
