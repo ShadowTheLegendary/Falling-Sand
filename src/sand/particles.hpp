@@ -60,62 +60,54 @@ struct Material {
 };
 
 
-struct BehaviorTable {
-    std::array<Behavior, (size_t)BehaviorID::COUNT> data;
+template <typename T, typename TID>
+struct Table {
+    std::array<T, (size_t)TID::COUNT> data;
 
-    Behavior& operator[](BehaviorID id) {
+    T& operator[](TID id) {
         return data[(size_t)id];
     }
 };
 
 
-struct MaterialTable {
-    std::array<Material, (size_t)MaterialID::COUNT> data;
-
-    Material& operator[](MaterialID id) {
-        return data[(size_t)id];
-    }
-};
-
-
-inline BehaviorTable behaviors;
-inline MaterialTable materials;
+inline Table<Behavior, BehaviorID> behaviors;
+inline Table<Material, MaterialID> materials;
 
 
 inline void register_material_behaviors() {
     behaviors[BehaviorID::Solid] = {
         .identifier = "solid",
         .movement_weights = {
-            0, 0, 0,
-            0, 1, 0,
-            0, 0, 0
+            00, 00, 00,
+            00, 10, 00,
+            00, 00, 00
         }
     };
 
     behaviors[BehaviorID::Powder] = {
         .identifier = "powder",
         .movement_weights = {
-            0, 0, 0,
-            0, 1, 0,
-            2, 2, 2
+            00, 00, 00,
+            00, 05, 00,
+            10, 20, 10
         }
     };
 
     behaviors[BehaviorID::Gas] = {
         .identifier = "gas",
         .movement_weights = {
-            3, 3, 3,
-            2, 1, 2,
-            0, 0, 0
+            20, 30, 20,
+            10, 05, 10,
+            00, 00, 00
         }
     };
 
     behaviors[BehaviorID::Liquid] = {
         .identifier = "liquid",
         .movement_weights = {
-            0, 0, 0,
-            2, 1, 2,
-            3, 3, 3
+            00, 00, 00,
+            10, 05, 10,
+            20, 30, 20
         }
     };
 }
@@ -243,6 +235,15 @@ inline sf::Color random_color(MaterialID material) {
 
    return sf::Color(r, g, b, a);
 }
+
+
+class ParticleInformation {
+public:
+	bool valid_particle = false;
+    std::string material_name = "";
+    std::string behavior_name = "";
+    float temp = 0;
+};
 
 
 struct Particle {

@@ -11,15 +11,6 @@
 #include "particles.hpp"
 
 
-class ParticleInformation {
-public:
-	bool valid_particle = false;
-    std::string material_name = "";
-    std::string behavior_name = "";
-    float temp = 0;
-};
-
-
 class ParticleSimulation {
 public:
 	////////////////////////////////////////////////////////////
@@ -57,7 +48,7 @@ public:
 	ParticleInformation get_particle_information(sf::Vector2i position);
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////
-	// \brief Returns the number of non air particles in the simulation, needs to be called after update
+	// \brief Returns the number of non air particles in the simulation
 	///////////////////////////////////////////////////////////////////////////////////////////////////////
 	std::size_t get_particle_count();
 
@@ -81,8 +72,6 @@ private:
 	sf::Vector2i size;
 
 	std::vector<Particle> particle_layers;
-
-	std::size_t particle_count = 0;
 
 	std::size_t multithreading_core_count = 4;
 	unsigned int multithreading_kernel_size = 8;

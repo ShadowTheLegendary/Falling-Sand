@@ -13,6 +13,7 @@
 
 sf::Font arial("fonts/Arial.ttf");
 
+
 /////////////////////////////////////////////
 // Public functions for ParticleSimulation //
 /////////////////////////////////////////////
@@ -34,8 +35,6 @@ ParticleSimulation::ParticleSimulation(sf::Vector2i size) : size(size) {
 
 
 void ParticleSimulation::update() {
-    particle_count = 0;
-
     for (Particle& particle : particle_layers) {
         particle.moved = false;
     }
@@ -209,6 +208,14 @@ ParticleInformation ParticleSimulation::get_particle_information(sf::Vector2i po
 
 
 std::size_t ParticleSimulation::get_particle_count() {
+    std::size_t particle_count = 0;
+
+    for (const Particle& particle : particle_layers) {
+        if (particle.material != MaterialID::Air) {
+            particle_count++;
+        }
+    }
+
     return particle_count;
 }
 
@@ -381,7 +388,6 @@ void ParticleSimulation::update_particle(sf::Vector2i coordinate) {
     if (particle_layers[coordinate_index].material == MaterialID::Air) {
         return;
     }
-    particle_count++;
 
     Particle particle = particle_layers[coordinate_index];
 
