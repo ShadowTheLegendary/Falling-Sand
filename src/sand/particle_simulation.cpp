@@ -38,8 +38,6 @@ ParticleSimulation::ParticleSimulation(sf::Vector2i size) : size(size) {
     unsigned int thread_count = std::thread::hardware_concurrency();
     multithreading_core_count = thread_count ? thread_count : 4;
 
-    std::vector<Particle> temporary_buffer;
-
     size_t len = size.x * size.y;
     particle_layers.resize(len);
 
@@ -49,8 +47,6 @@ ParticleSimulation::ParticleSimulation(sf::Vector2i size) : size(size) {
         particle.material = MaterialID::Air;
         particle_layers[i] = particle;
     }
-
-    pending_particle_layers = particle_layers;
 }
 
 
@@ -76,10 +72,12 @@ void ParticleSimulation::swap(sf::Vector2i a, sf::Vector2i b) {
     const int index_a = get_index(a);
     const int index_b = get_index(b);
 
-    pending_particle_layers[index_a] = particle_layers[index_b];
-    pending_particle_layers[index_b] = particle_layers[index_a];
-    pending_particle_layers[index_a].moved = true;
-    pending_particle_layers[index_b].moved = true;
+    const Particle particle_a = particle_layers[index_a];
+
+    particle_layers[index_a] = particle_layers[index_b];
+    particle_layers[index_b] = particle_a;
+    particle_layers[index_a].moved = true;
+    particle_layers[index_b].moved = true;
 }
 
 
@@ -99,8 +97,8 @@ void ParticleSimulation::update_temp(Particle& particle, int coordinate_index, s
         delta += temp_transfer * (extern_temp - particle.temp);
     }
 
-    pending_particle_layers[coordinate_index].temp = particle.temp + delta;
-    pending_particle_layers[coordinate_index].temp = std::clamp(pending_particle_layers[coordinate_index].temp, -273.0f, 5000.0f);
+    particle_layers[coordinate_index].temp = particle.temp + delta;
+    particle_layers[coordinate_index].temp = std::clamp(particle_layers[coordinate_index].temp, -273.0f, 5000.0f);
 }
 
 
@@ -125,7 +123,7 @@ void ParticleSimulation::update_material(Particle& particle, int coordinate_inde
     particle.material = new_material;
     particle.color = random_color(particle.material);
 
-    pending_particle_layers[coordinate_index] = particle;
+    particle_layers[coordinate_index] = particle;
 }
 
 
@@ -136,7 +134,7 @@ void ParticleSimulation::update_movement(Particle& particle, sf::Vector2i coordi
         { -1, 1}, { 0, 1 }, { 1, 1 }
     };
 
-    if (pending_particle_layers[coordinate_index].moved) {
+    if (particle_layers[coordinate_index].moved) {
         return;
     }
 
@@ -160,7 +158,7 @@ void ParticleSimulation::update_movement(Particle& particle, sf::Vector2i coordi
             continue;
         }
 
-        if (pending_particle_layers[index].moved) {
+        if (particle_layers[index].moved) {
             continue;
         }
 
@@ -211,10 +209,9 @@ void ParticleSimulation::update_particle(sf::Vector2i coordinate) {
 
 
 void ParticleSimulation::update() {
-    pending_particle_layers = particle_layers;
     particle_count = 0;
 
-    for (Particle& particle : pending_particle_layers) {
+    for (Particle& particle : particle_layers) {
         particle.moved = false;
     }
 
@@ -225,8 +222,6 @@ void ParticleSimulation::update() {
            update_particle(pos);
         }
     }
-
-    particle_layers = pending_particle_layers;
 }
 
 
@@ -368,7 +363,7 @@ void ParticleSimulation::draw_brush_outline_sfml(sf::RenderWindow& window, int b
 ParticleInformation ParticleSimulation::get_particle_information(sf::Vector2i position) {
     int cell_stride = cell_px + gap;
     
-    sf::Vector2i mouse_pos_grid = mouse_pos / cell_stride;
+    sf::Vector2i mouse_pos_grid = position / cell_stride;
 
     int index = get_index(mouse_pos_grid);
 

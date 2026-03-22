@@ -80,7 +80,6 @@ private:
 	sf::Vector2i size;
 
 	std::vector<Particle> particle_layers;
-	std::vector<Particle> pending_particle_layers;
 
 	std::size_t particle_count = 0;
 
