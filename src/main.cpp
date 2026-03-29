@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <string>
 #include <sstream>
+#include <format>
 #include <optional>
 
 #include "sand/particle_simulation.hpp"
@@ -48,7 +49,7 @@ int main() {
 
     while (window.isOpen()) {
         mouse_pos = sf::Mouse::getPosition(window);
-        float fps = counter.update();
+        int fps = counter.update();
 
         // Handle input
         while (const std::optional event = window.pollEvent()) {
@@ -112,7 +113,7 @@ int main() {
         general_info_str << paused_info
             << "selected element: " << materials[sidebar.get_selected_of_index()].identifier
             << "\ndisplay mode: " << display_mode_info
-            << "\nFPS: " << std::format("{:.1f}", fps) << "/" << playback_speed
+            << "\nFPS: " << fps << "/" << playback_speed
             << "\nParticles: " << sim.get_particle_count();
 
         general_info.setString(general_info_str.str());

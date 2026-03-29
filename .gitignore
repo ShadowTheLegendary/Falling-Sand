@@ -1,6 +1,6 @@
 build/
 toolchains/
+.cache/
 
-CMakeLists.txt
 CMakeLists.json
 CMakePresets.json
