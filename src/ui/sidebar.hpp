@@ -2,15 +2,21 @@
 
 // fully striped and soon to be replaced
 
+#include <SFML/Graphics/Vertex.hpp>
+
+#include <SFML/System/Rect2.hpp>
+#include <SFML/System/Vec2.hpp>
+
+#include "SFML/Base/Vector.hpp"
+
 #include <string>
 #include <vector>
 #include <iostream>
 #include <variant>
 #include <unordered_map>
 
-#include <SFML/Graphics.hpp>
+#include "sand/particles.hpp"
 
-#include "src/sand/particles.hpp"
 
 class Sidebar {
 private:
@@ -37,9 +43,9 @@ public:
         }
     }
 
-    void handle_click(const sf::Vector2i& mouse_pos, sf::RenderWindow& window, int square_size = 32, int padding = 8) {
+    void handle_click(const sf::Vec2i& mouse_pos, sf::RenderWindow& window, int square_size = 32, int padding = 8) {
         int num_options = static_cast<int>(options.size());
-        sf::Vector2u win_size = window.getSize();
+        sf::Vec2u win_size = window.getSize();
 
         int x = 0, y = 0;
         int bar_width = square_size + 2 * padding;
@@ -77,7 +83,7 @@ public:
                 square_x = x + padding + i * (square_size + padding);
                 square_y = y + padding;
             }
-            sf::IntRect rect{ {square_x, square_y}, {square_size, square_size} };
+            sf::Rect2i rect{ {square_x, square_y}, {square_size, square_size} };
             if (rect.contains(mouse_pos)) {
                 selected_index = i;
                 break;
@@ -92,11 +98,11 @@ public:
         return MaterialID::Air;
     }
 
-    void draw_sfml(sf::RenderWindow& window, int square_size = 32, int padding = 8) {
+    void draw_sfml(sf::RenderWindow& window, float square_size = 32, float padding = 8) {
         int num_options = static_cast<int>(options.size());
-        sf::Vector2u win_size = window.getSize();
+        sf::Vec2u win_size = window.getSize();
 
-        int x = 0, y = 0;
+        float x = 0, y = 0;
         int bar_width = square_size + 2 * padding;
         int bar_height = num_options * (square_size + padding) + padding;
 
@@ -123,29 +129,27 @@ public:
         }
 
         for (int i = 0; i < num_options; ++i) {
-            int square_x, square_y;
+            sf::Vec2f square_pos;
             if (bar_alignment == "left" || bar_alignment == "right") {
-                square_x = x + padding;
-                square_y = y + padding + i * (square_size + padding);
+                square_pos.x = x + padding;
+                square_pos.y = y + padding + i * (square_size + padding);
             }
             else { // top or bottom
-                square_x = x + padding + i * (square_size + padding);
-                square_y = y + padding;
+                square_pos.x = x + padding + i * (square_size + padding);
+                square_pos.y = y + padding;
             }
 
-            sf::RectangleShape rect(sf::Vector2f(static_cast<float>(square_size), static_cast<float>(square_size)));
-            rect.setPosition(sf::Vector2f(static_cast<float>(square_x), static_cast<float>(square_y)));
-            rect.setFillColor(options[i].color);
-            window.draw(rect);
+            sf::base::Vector<sf::Vertex> rect;
+            rect.pushBack(sf::Vertex{.position=square_pos, .color=options[i].color});
+            rect.pushBack(sf::Vertex{.position={square_pos.x+square_size, square_pos.y}, .color=options[i].color});
+            rect.pushBack(sf::Vertex{.position={square_pos.x+square_size, square_pos.y+square_size}, .color=options[i].color});
+            rect.pushBack(sf::Vertex{.position={square_pos.x, square_pos.y+square_size}, .color=options[i].color});
+            rect.pushBack(sf::Vertex{.position=square_pos, .color=options[i].color});
 
-            if (i == selected_index) {
-                sf::RectangleShape border(sf::Vector2f(static_cast<float>(square_size), static_cast<float>(square_size)));
-                border.setPosition(sf::Vector2f(static_cast<float>(square_x), static_cast<float>(square_y)));
-                border.setFillColor(sf::Color::Transparent);
-                border.setOutlineColor(sf::Color::White);
-                border.setOutlineThickness(3.f);
-                window.draw(border);
-            }
+            window.draw(rect, sf::PrimitiveType::TriangleStrip);
+
+            // TODO: Add visual feedback
+
         }
     }
 };

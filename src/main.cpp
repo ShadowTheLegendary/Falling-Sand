@@ -1,59 +1,80 @@
 ﻿#include <SFML/Graphics/RenderWindow.hpp>
+#include <SFML/Graphics/Font.hpp>
+#include <SFML/Graphics/Text.hpp>
+#include <SFML/Graphics/GraphicsContext.hpp>
+
+#include <SFML/Window/WindowContext.hpp>
+#include <SFML/Window/Event.hpp>
+#include <SFML/Window/EventUtils.hpp>
+
+#include <SFML/System/Clock.hpp>
+#include "SFML/System/Path.hpp"
+#include "SFML/System/UnicodeString.hpp"
+#include "SFML/System/IO.hpp"
+
+#include <SFML/Base/Optional.hpp>
 
 #include <algorithm>
 #include <string>
 #include <sstream>
 #include <optional>
+#include <format>
 
 #include "sand/particle_simulation.hpp"
 #include "sand/particles.hpp"
 #include "ui/sidebar.hpp"
-#include "viewport/viewport.hpp"
-#include "fps/fps.hpp"
 
+constexpr sf::Vec2u window_size = {640, 360};
 
 int main() {
+    auto graphics_context = sf::GraphicsContext::create().value();
+    // auto window_context = sf::WindowContext::create().value();
+
+    auto window = sf::RenderWindow::create({
+        .size = window_size,
+        .title = "Falling Sand",
+        .resizable = false,
+        .vsync = false,
+    }).value();
+    window.setFramerateLimit(45);
+
     register_material_behaviors();
     register_materials();
 
-    int playback_speed = 0;
-
-    sf::RenderWindow window(sf::VideoMode({ 640, 360 }), "Particle Sim");
-    window.setFramerateLimit(playback_speed);
-
-    sf::View view;
-    edit_viewport(window, view, {640, 360});
-
-    ParticleSimulation sim({64, 32});
-    Sidebar sidebar({ MaterialID::Sand, MaterialID::Rock, MaterialID::Water, MaterialID::Steam }, { sf::Color(255, 255, 0), sf::Color(128, 128, 128), sf::Color(0, 128, 255), sf::Color::Green });
+    ParticleSimulation sim(sf::Vec2u{64u, 32u});
+    Sidebar sidebar({ MaterialID::Sand, MaterialID::Rock, MaterialID::Water, MaterialID::Steam }, { {255, 255, 0}, {128, 128, 128}, {0, 128, 255}, sf::Color::Green });
 
     int brush_size = 5;
 
-    sf::Vector2i mouse_pos;
+    sf::Vec2i mouse_pos;
 
-    sf::Font arial("fonts/Arial.ttf");
+    const sf::Font arial = sf::Font::openFromFile("fonts/Arial.ttf").value();
 
-    sf::Text general_info(arial, "", 15U);
-    general_info.setPosition(sf::Vector2f(15, 268));
+    sf::Text general_info(arial, {
+        .position = {15.f, 268.f},
+        .characterSize = 15U,
+    });
 
-    sf::Text particle_info(arial, "", 15U);
-    particle_info.setPosition(sf::Vector2f(450, 288));
+    sf::Text particle_info(arial, {
+        .position = {450.f, 288.f},
+        .characterSize = 15U,
+    });
 
     bool paused = false;
     std::string paused_info = "\n";
 
     std::string display_mode_info = "standard";
 
-    FpsCounter counter;
+    sf::Clock clock;
 
-    while (window.isOpen()) {
+    while (true) {
         mouse_pos = sf::Mouse::getPosition(window);
-        float fps = counter.update();
+        sf::base::I32 frame_time = clock.restart().asMilliseconds();
 
         // Handle input
-        while (const std::optional event = window.pollEvent()) {
-            if (event->is<sf::Event::Closed>() or sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Escape)) {
-                window.close();
+        while (const auto event = window.pollEvent()) {
+            if (sf::EventUtils::isClosedOrEscapeKeyPressed(*event)) {
+                return 0;
             }
 
             if (const auto* mouseButtonPressed = event->getIf<sf::Event::MouseButtonPressed>()) {
@@ -71,26 +92,19 @@ int main() {
                 }
             }
 
-            if (const auto* textEntered = event->getIf<sf::Event::TextEntered>()) {
-                if (textEntered->unicode >= 48 and textEntered->unicode <= 57) { // 1 - 9
-                    playback_speed = 15 * (textEntered->unicode - 48);
-                    window.setFramerateLimit(playback_speed);
-                }
-            }
+            // Arrow key pressed:
+            if (event->is<sf::Event::KeyPressed>()) {
+                switch (event->getIf<sf::Event::KeyPressed>()->code) {
+                    case sf::Keyboard::Key::Space:
+                        paused = !paused;
 
-            if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()) {
-                if (keyPressed->code == sf::Keyboard::Key::Space) {
-                    paused = !paused;
-
-                    paused_info = (paused) ? "paused\n" : "\n";
-                }
-
-                if (keyPressed->code == sf::Keyboard::Key::F && paused) {
-                    sim.update();
-                }
-
-                if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Escape)) {
-                    break;
+                        paused_info = (paused) ? "paused\n" : "\n";
+                        break;
+                    case sf::Keyboard::Key::F:
+                        sim.update();
+                        break;
+                    default:
+                        break;
                 }
             }
         }
@@ -108,23 +122,23 @@ int main() {
         }
 
         // Update ui
-        std::ostringstream general_info_str;
+        sf::OutStringStream general_info_str;
         general_info_str << paused_info
             << "selected element: " << materials[sidebar.get_selected_of_index()].identifier
             << "\ndisplay mode: " << display_mode_info
-            << "\nFPS: " << std::format("{:.1f}", fps) << "/" << playback_speed
-            << "\nParticles: " << sim.get_particle_count();
+            << "\nframe time: " << frame_time << "ms"
+            << "\nparticle count: " << sim.get_particle_count();
 
-        general_info.setString(general_info_str.str());
+        general_info.setString(general_info_str.to<sf::UnicodeString>());
 
         ParticleInformation info = sim.get_particle_information(mouse_pos);
 
         if (info.valid_particle) {
-            std::ostringstream particle_info_str;
+            sf::OutStringStream particle_info_str;
             particle_info_str << info.material_name << "\n"
             << info.behavior_name << "\n"
             << info.temp << "c\n";
-            particle_info.setString(particle_info_str.str());
+            particle_info.setString(particle_info_str.to<sf::UnicodeString>());
         }
         else {
             particle_info.setString("");
@@ -132,7 +146,7 @@ int main() {
 
         window.clear();
 
-        sim.draw_sfml(window, false);
+        sim.draw_sfml(window);
         sim.draw_brush_outline_sfml(window, brush_size, mouse_pos);
 
         sidebar.draw_sfml(window);

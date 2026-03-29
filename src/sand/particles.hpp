@@ -2,18 +2,19 @@
 
 #include <SFML/Graphics/Color.hpp>
 
-#include <string>
+#include <SFML/Base/Vector.hpp>
+#include <SFML/Base/String.hpp>
+#include <SFML/Base/Array.hpp>
+#include <SFML/Base/Clamp.hpp>
+#include <SFML/Base/IntTypes.hpp>
+
 #include <random>
-#include <cstdint>
-#include <algorithm>
-#include <array>
-#include <vector>
 
 
 inline std::mt19937 gen(std::random_device{}());
 
 
-enum class MaterialID : uint8_t {
+enum class MaterialID : sf::base::U8 {
     Air,
     Rock,
     Lava,
@@ -27,7 +28,7 @@ enum class MaterialID : uint8_t {
 };
 
 
-enum class BehaviorID : uint8_t {
+enum class BehaviorID : sf::base::U8 {
     Solid,
     Powder,
     Liquid,
@@ -37,15 +38,15 @@ enum class BehaviorID : uint8_t {
 
 
 struct Behavior {
-    std::string identifier = "none";
-    std::vector<uint8_t> movement_weights;
+    sf::base::String identifier = "none";
+    sf::base::Vector<sf::base::U8> movement_weights;
 };
 
 
 struct Material {
     BehaviorID behavior;
 
-	std::string identifier = "none";
+	sf::base::String identifier = "none";
 
     float density;
 
@@ -62,7 +63,7 @@ struct Material {
 
 template <typename T, typename TID>
 struct Table {
-    std::array<T, (size_t)TID::COUNT> data;
+    sf::base::Array<T, (size_t)TID::COUNT> data;
 
     T& operator[](TID id) {
         return data[(size_t)id];
@@ -122,7 +123,7 @@ inline void register_materials() {
         .state_change_high_new = MaterialID::Air,
         .state_change_low_temp = 0,
         .state_change_low_new = MaterialID::Air,
-        .base_color = sf::Color(0, 0, 0),
+        .base_color = { 0, 0, 0 },
         .color_offset = 0,
     };
 
@@ -134,7 +135,7 @@ inline void register_materials() {
         .state_change_high_new = MaterialID::Lava,
         .state_change_low_temp = 0,
         .state_change_low_new = MaterialID::Rock,
-        .base_color = sf::Color(128, 128, 128),
+        .base_color = {128, 128, 128},
         .color_offset = 5,
     };
 
@@ -146,7 +147,7 @@ inline void register_materials() {
         .state_change_high_new = MaterialID::Lava,
         .state_change_low_temp = 699,
         .state_change_low_new = MaterialID::Rock,
-        .base_color = sf::Color(255, 115, 0),
+        .base_color = {255, 115, 0},
         .color_offset = 25,
     };
 
@@ -158,7 +159,7 @@ inline void register_materials() {
         .state_change_high_new = MaterialID::MoltenGlass,
         .state_change_low_temp = 0,
         .state_change_low_new = MaterialID::Sand,
-        .base_color = sf::Color(255, 255, 0),
+        .base_color = {255, 255, 0},
         .color_offset = 25,
     };
 
@@ -170,7 +171,7 @@ inline void register_materials() {
         .state_change_high_new = MaterialID::MoltenGlass,
         .state_change_low_temp = 1499,
         .state_change_low_new = MaterialID::Glass,
-        .base_color = sf::Color(255, 188, 79),
+        .base_color = {255, 188, 79},
         .color_offset = 20,
     };
 
@@ -182,7 +183,7 @@ inline void register_materials() {
         .state_change_high_new = MaterialID::MoltenGlass,
         .state_change_low_temp = 0,
         .state_change_low_new = MaterialID::Glass,
-        .base_color = sf::Color(207, 255, 245),
+        .base_color = {207, 255, 245},
         .color_offset = 5,
     };
 
@@ -194,7 +195,7 @@ inline void register_materials() {
         .state_change_high_new = MaterialID::Steam,
         .state_change_low_temp = 0,
         .state_change_low_new = MaterialID::Ice,
-        .base_color = sf::Color(0,128,255),
+        .base_color = {0,128,255},
         .color_offset = 15,
     };
 
@@ -206,7 +207,7 @@ inline void register_materials() {
         .state_change_high_new = MaterialID::Water,
         .state_change_low_temp = 0,
         .state_change_low_new = MaterialID::Ice,
-        .base_color = sf::Color(131, 206, 255),
+        .base_color = {131, 206, 255},
         .color_offset = 15,
     };
     
@@ -218,7 +219,7 @@ inline void register_materials() {
         .state_change_high_new = MaterialID::Steam,
         .state_change_low_temp = 0,
         .state_change_low_new = MaterialID::Water,
-        .base_color = sf::Color(200, 200, 200),
+        .base_color = {200, 200, 200},
         .color_offset = 5,
     };
 }
@@ -228,20 +229,20 @@ inline sf::Color random_color(MaterialID material) {
     sf::Color color = materials[material].base_color;
     std::uniform_int_distribution<int> color_dist(-materials[material].color_offset, materials[material].color_offset);
 
-    int r = std::clamp(static_cast<int>(color.r) + color_dist(gen), 0, 255);
-    int g = std::clamp(static_cast<int>(color.g) + color_dist(gen), 0, 255);
-    int b = std::clamp(static_cast<int>(color.b) + color_dist(gen), 0, 255);
-    int a = color.a;
+    sf::base::U8 r = sf::base::clamp(color.r + color_dist(gen), 0, 255);
+    sf::base::U8 g = sf::base::clamp(color.g + color_dist(gen), 0, 255);
+    sf::base::U8 b = sf::base::clamp(color.b + color_dist(gen), 0, 255);
+    sf::base::U8 a = color.a;
 
-   return sf::Color(r, g, b, a);
+   return {r, g, b, a};
 }
 
 
 class ParticleInformation {
 public:
 	bool valid_particle = false;
-    std::string material_name = "";
-    std::string behavior_name = "";
+    sf::base::String material_name = "";
+    sf::base::String behavior_name = "";
     float temp = 0;
 };
 
