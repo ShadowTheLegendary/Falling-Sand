@@ -1,6 +1,7 @@
 ﻿// #include <SFML/Graphics.hpp>
 #include <SFML/Graphics/Font.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
+#include <SFML/Graphics/RectangleShapeData.hpp>
 
 #include <SFML/System/Vec2.hpp>
 #include "SFML/System/Path.hpp"
@@ -88,18 +89,11 @@ void ParticleSimulation::brush(int brush_size, sf::Vec2i position, MaterialID ma
 void ParticleSimulation::draw_sfml(sf::RenderTarget& target) {
     for (int x = 0; x < size.x; x++) {
         for (int y = 0; y < size.y; y++) {
-            sf::Color color = particle_layers[get_index({x,y})].color;
-
-            sf::Vec2f pos = {x * (cell_px + gap), y * (cell_px + gap)};
-
-            sf::base::Vector<sf::Vertex> cell;
-            cell.pushBack(sf::Vertex{.position=pos, .color=color});
-            cell.pushBack(sf::Vertex{.position={pos.x+cell_px, pos.y}, .color=color});
-            cell.pushBack(sf::Vertex{.position={pos.x+cell_px, pos.y+cell_px}, .color=color});
-            cell.pushBack(sf::Vertex{.position={pos.x, pos.y+cell_px}, .color=color});
-            cell.pushBack(sf::Vertex{.position=pos, .color=color});
-        
-            target.draw(cell, sf::PrimitiveType::TriangleStrip);
+            target.draw(sf::RectangleShapeData{
+                .position = {static_cast<float>(x * (cell_px + gap)), static_cast<float>(y * (cell_px + gap))},
+                .fillColor = particle_layers[get_index({x,y})].color,
+                .size = {static_cast<float>(cell_px), static_cast<float>(cell_px)}
+            });
         }
     }
 }

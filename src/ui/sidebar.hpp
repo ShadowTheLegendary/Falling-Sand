@@ -2,7 +2,7 @@
 
 // fully striped and soon to be replaced
 
-#include <SFML/Graphics/Vertex.hpp>
+#include <SFML/Graphics/RectangleShapeData.hpp>
 
 #include <SFML/System/Rect2.hpp>
 #include <SFML/System/Vec2.hpp>
@@ -139,16 +139,21 @@ public:
                 square_pos.y = y + padding;
             }
 
-            sf::base::Vector<sf::Vertex> rect;
-            rect.pushBack(sf::Vertex{.position=square_pos, .color=options[i].color});
-            rect.pushBack(sf::Vertex{.position={square_pos.x+square_size, square_pos.y}, .color=options[i].color});
-            rect.pushBack(sf::Vertex{.position={square_pos.x+square_size, square_pos.y+square_size}, .color=options[i].color});
-            rect.pushBack(sf::Vertex{.position={square_pos.x, square_pos.y+square_size}, .color=options[i].color});
-            rect.pushBack(sf::Vertex{.position=square_pos, .color=options[i].color});
+            window.draw(sf::RectangleShapeData{
+                .position = square_pos,
+                .fillColor = options[i].color,
+                .size = {square_size, square_size}
+            });
 
-            window.draw(rect, sf::PrimitiveType::TriangleStrip);
-
-            // TODO: Add visual feedback
+            if (i == selected_index) {
+                window.draw(sf::RectangleShapeData{
+                    .position = square_pos,
+                    .fillColor = sf::Color::Transparent,
+                    .outlineColor = sf::Color::White,
+                    .outlineThickness = 3.f,
+                    .size = {square_size, square_size}
+                });
+            }
 
         }
     }
